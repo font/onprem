@@ -38,16 +38,16 @@ var (
 	kubeAPIQPS     = 20.0
 	kubeAPIBurst   = 30
 
-	defaultConfigMapName      = "hub-cluster"
-	defaultSecretName         = "hub-cluster"
-	apiEndpointKey            = "server"
-	joinedClusterNameKey      = "joinClusterName"
-	joinedClusterNamespaceKey = "joinClusterNamespace"
-	caBundleKey               = "caBundle"
-	tokenKey                  = "token"
+	defaultConfigMapName          = "hub-cluster"
+	defaultSecretName             = "hub-cluster"
+	apiEndpointKey                = "server"
+	registeredClusterNameKey      = "joinClusterName"
+	registeredClusterNamespaceKey = "joinClusterNamespace"
+	caBundleKey                   = "caBundle"
+	tokenKey                      = "token"
 )
 
-type JoinedClusterCoordinates struct {
+type RegisteredClusterCoordinates struct {
 	APIEndpoint string
 	Name        string
 	Namespace   string
@@ -55,7 +55,7 @@ type JoinedClusterCoordinates struct {
 	CABundle    []byte
 }
 
-func GetJoinedClusterCoordinates(spokeClient client.Client) (*JoinedClusterCoordinates, error) {
+func GetRegisteredClusterCoordinates(spokeClient client.Client) (*RegisteredClusterCoordinates, error) {
 	namespaceBytes, err := ioutil.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/namespace")
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to get my namespace")
@@ -75,14 +75,14 @@ func GetJoinedClusterCoordinates(spokeClient client.Client) (*JoinedClusterCoord
 		return nil, errors.Errorf("The configmap for the hub cluster is missing a non-empty value for %q", apiEndpointKey)
 	}
 
-	joinedClusterName, found := configMap.Data[joinedClusterNameKey]
-	if !found || len(joinedClusterName) == 0 {
-		return nil, errors.Errorf("The configmap for the hub cluster is missing a non-empty value for %q", joinedClusterNamespaceKey)
+	registeredClusterName, found := configMap.Data[registeredClusterNameKey]
+	if !found || len(registeredClusterName) == 0 {
+		return nil, errors.Errorf("The configmap for the hub cluster is missing a non-empty value for %q", registeredClusterNamespaceKey)
 	}
 
-	joinedClusterNamespace, found := configMap.Data[joinedClusterNamespaceKey]
-	if !found || len(joinedClusterNamespace) == 0 {
-		return nil, errors.Errorf("The configmap for the hub cluster is missing a non-empty value for %q", joinedClusterNamespaceKey)
+	registeredClusterNamespace, found := configMap.Data[registeredClusterNamespaceKey]
+	if !found || len(registeredClusterNamespace) == 0 {
+		return nil, errors.Errorf("The configmap for the hub cluster is missing a non-empty value for %q", registeredClusterNamespaceKey)
 	}
 
 	// Extract contents from Secret.
@@ -103,16 +103,16 @@ func GetJoinedClusterCoordinates(spokeClient client.Client) (*JoinedClusterCoord
 		return nil, errors.Errorf("The secret for the hub cluster is missing a non-empty value for %q", caBundleKey)
 	}
 
-	return &JoinedClusterCoordinates{
+	return &RegisteredClusterCoordinates{
 		APIEndpoint: apiEndpoint,
-		Name:        joinedClusterName,
-		Namespace:   joinedClusterNamespace,
+		Name:        registeredClusterName,
+		Namespace:   registeredClusterNamespace,
 		Token:       token,
 		CABundle:    caBundle,
 	}, nil
 }
 
-func BuildHubClusterConfig(spokeClient client.Client, jcc *JoinedClusterCoordinates) (*rest.Config, error) {
+func BuildHubClusterConfig(spokeClient client.Client, jcc *RegisteredClusterCoordinates) (*rest.Config, error) {
 	// Build config using contents extracted from ConfigMap and Secret.
 	clusterConfig, err := clientcmd.BuildConfigFromFlags(jcc.APIEndpoint, "")
 	if err != nil {
@@ -127,25 +127,25 @@ func BuildHubClusterConfig(spokeClient client.Client, jcc *JoinedClusterCoordina
 	return clusterConfig, nil
 }
 
-// JoinedClusterReconciler reconciles a JoinedCluster object
-type JoinedClusterReconciler struct {
+// RegisteredClusterReconciler reconciles a RegisteredCluster object
+type RegisteredClusterReconciler struct {
 	HubClient       client.Client
 	SpokeClient     client.Client
 	DiscoveryClient *discovery.DiscoveryClient
 	Log             logr.Logger
 }
 
-func (r *JoinedClusterReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
+func (r *RegisteredClusterReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
-	log := r.Log.WithValues("joinedcluster", req.NamespacedName)
+	log := r.Log.WithValues("registeredcluster", req.NamespacedName)
 
-	jcc, err := GetJoinedClusterCoordinates(r.SpokeClient)
+	jcc, err := GetRegisteredClusterCoordinates(r.SpokeClient)
 	if err != nil {
-		log.Error(err, "unable to get joinedcluster coordinates")
+		log.Error(err, "unable to get registeredcluster coordinates")
 		return ctrl.Result{}, err
 	}
 
-	// Ignore JoinedClusters that do not belong to us. Only check name as we're
+	// Ignore RegisteredClusters that do not belong to us. Only check name as we're
 	// only watching one namespace.
 	if jcc.Name != req.NamespacedName.Name {
 		return ctrl.Result{}, nil
@@ -153,15 +153,15 @@ func (r *JoinedClusterReconciler) Reconcile(req ctrl.Request) (ctrl.Result, erro
 
 	log.V(2).Info("reconciling")
 
-	var joinedCluster v1alpha1.JoinedCluster
-	if err := r.HubClient.Get(ctx, req.NamespacedName, &joinedCluster); err != nil {
-		log.Error(err, "unable to get joinedcluster")
+	var registeredCluster v1alpha1.RegisteredCluster
+	if err := r.HubClient.Get(ctx, req.NamespacedName, &registeredCluster); err != nil {
+		log.Error(err, "unable to get registeredcluster")
 		return ctrl.Result{}, err
 	}
 
 	reason := "AgentHeartBeat"
 	message := "Spoke agent successfully connected to hub"
-	agentConnected := v1alpha1.JoinedClusterConditions{
+	agentConnected := v1alpha1.RegisteredClusterCondition{
 		Type:    v1alpha1.ConditionTypeAgentConnected,
 		Status:  v1alpha1.ConditionTrue,
 		Reason:  &reason,
@@ -169,11 +169,12 @@ func (r *JoinedClusterReconciler) Reconcile(req ctrl.Request) (ctrl.Result, erro
 	}
 
 	currentTime := metav1.Now()
-	statusTransitioned := joinedCluster.Status.Conditions != nil && joinedCluster.Status.Conditions[0].Type != v1alpha1.ConditionTypeAgentConnected
+	statusTransitioned := registeredCluster.Status.Conditions != nil && registeredCluster.Status.Conditions[0].Type != v1alpha1.ConditionTypeAgentConnected
 	if statusTransitioned {
 		agentConnected.LastTransitionTime = &currentTime
 	}
-	joinedCluster.Status.Conditions = []v1alpha1.JoinedClusterConditions{agentConnected}
+
+	registeredCluster.Status.Conditions = []v1alpha1.RegisteredClusterCondition{agentConnected}
 
 	clusterName, err := getClusterName(r, log)
 	if err != nil {
@@ -198,10 +199,10 @@ func (r *JoinedClusterReconciler) Reconcile(req ctrl.Request) (ctrl.Result, erro
 		ClusterVersion: clusterVersion.GitVersion,
 		NodeCount:      len(nodeList.Items),
 	}
-	joinedCluster.Status.ClusterAgentInfo = agentInfo
+	registeredCluster.Status.ClusterAgentInfo = agentInfo
 
-	if err := r.HubClient.Status().Update(ctx, &joinedCluster); err != nil {
-		log.Error(err, "unable to update joinedcluster status")
+	if err := r.HubClient.Status().Update(ctx, &registeredCluster); err != nil {
+		log.Error(err, "unable to update registeredcluster status")
 		return ctrl.Result{}, err
 	}
 
@@ -209,13 +210,13 @@ func (r *JoinedClusterReconciler) Reconcile(req ctrl.Request) (ctrl.Result, erro
 	return ctrl.Result{RequeueAfter: HeartBeatDelay}, nil
 }
 
-func (r *JoinedClusterReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (r *RegisteredClusterReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&v1alpha1.JoinedCluster{}).
+		For(&v1alpha1.RegisteredCluster{}).
 		Complete(r)
 }
 
-func getClusterName(r *JoinedClusterReconciler, log logr.Logger) (string, error) {
+func getClusterName(r *RegisteredClusterReconciler, log logr.Logger) (string, error) {
 	infrastructure := &configv1.Infrastructure{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "cluster",

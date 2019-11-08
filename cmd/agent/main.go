@@ -61,7 +61,7 @@ func main() {
 		setupLog.Error(err, "Unable to get discoveryClient for the spoke cluster")
 		os.Exit(1)
 	}
-	joinedClusterCoordinates, err := agent.GetJoinedClusterCoordinates(spokeClient)
+	joinedClusterCoordinates, err := agent.GetRegisteredClusterCoordinates(spokeClient)
 	if err != nil {
 		setupLog.Error(err, "Unable to get join cluster coordinates")
 		os.Exit(1)
@@ -85,13 +85,13 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err = (&agent.JoinedClusterReconciler{
+	if err = (&agent.RegisteredClusterReconciler{
 		HubClient:       mgr.GetClient(),
 		SpokeClient:     spokeClient,
 		DiscoveryClient: discoveryClient,
-		Log:             ctrl.Log.WithName("agent").WithName("JoinedCluster"),
+		Log:             ctrl.Log.WithName("agent").WithName("RegisteredCluster"),
 	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "JoinedCluster")
+		setupLog.Error(err, "unable to create controller", "controller", "RegisteredCluster")
 		os.Exit(1)
 	}
 	// +kubebuilder:scaffold:builder

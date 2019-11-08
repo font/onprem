@@ -22,7 +22,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func (j *JoinedCluster) IsCondition(condition JoinedClusterConditionType) *JoinedClusterConditions {
+func (j *RegisteredCluster) IsCondition(condition RegisteredClusterConditionType) *RegisteredClusterCondition {
 	for _, c := range j.Status.Conditions {
 		if c.Type == condition && c.Status == ConditionTrue {
 			return &c
@@ -31,7 +31,7 @@ func (j *JoinedCluster) IsCondition(condition JoinedClusterConditionType) *Joine
 	return nil
 }
 
-func (j *JoinedCluster) SetCondition(condition JoinedClusterConditionType) error {
+func (j *RegisteredCluster) SetCondition(condition RegisteredClusterConditionType) error {
 	switch condition {
 	case ConditionTypeAgentDisconnected:
 		j.clearCondition(ConditionTypeAgentStale, "AgentDisconnected")
@@ -52,7 +52,7 @@ func (j *JoinedCluster) SetCondition(condition JoinedClusterConditionType) error
 	return nil
 }
 
-func (j *JoinedCluster) setCondition(condition JoinedClusterConditionType, reason string) {
+func (j *RegisteredCluster) setCondition(condition RegisteredClusterConditionType, reason string) {
 	// update the condition if found in the slice
 	for i, c := range j.Status.Conditions {
 		if c.Type == condition {
@@ -68,10 +68,10 @@ func (j *JoinedCluster) setCondition(condition JoinedClusterConditionType, reaso
 	}
 	now := metav1.Now()
 	// create the condition since it doesn't exist
-	j.Status.Conditions = append(j.Status.Conditions, JoinedClusterConditions{condition, ConditionTrue, &now, &reason, nil})
+	j.Status.Conditions = append(j.Status.Conditions, RegisteredClusterCondition{condition, ConditionTrue, &now, &reason, nil})
 }
 
-func (j *JoinedCluster) clearCondition(condition JoinedClusterConditionType, reason string) error {
+func (j *RegisteredCluster) clearCondition(condition RegisteredClusterConditionType, reason string) error {
 	// update the condition status to false and the timestamp of transition to now
 	for i, c := range j.Status.Conditions {
 		if c.Type == condition {
