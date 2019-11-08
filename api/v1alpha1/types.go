@@ -294,9 +294,8 @@ type ClusterStatus struct {
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
-// ClusterWorkload describes what could be placed into a spoke cluster.  It does not describe which (if any) clusters should
-// create the workload.  That is done based on a PlacementPolicy.  If a PlacementPolicy matches a MultiClusterWorkload
-// and a RegisteredCluster, then a namespaced Workload resource will be created in the cluster's namespace.
+// ClusterWorkload describes what is desired to be placed into each spoke cluster by creating a resource of this type
+// in a namespace reserved for each spoke..
 type ClusterWorkload struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -314,10 +313,6 @@ type ClusterWorkloadSpec struct {
 	// in the spoke cluster, this is a property of the MultiClusterWorkloadSpec.
 	// This name must match a DefinedSubject.metadata.name to pass an admission validation check, but the reference can
 	// become stale at a later date.
-	// When a client creates or updates a MultiClusterWorkload, a secondary ACL check is performed to see if the client
-	// can "use" the referenced subject.  The "use" check is uniform across ALL clusters registered in the hub. It doesn't
-	// mean that every cluster honors this subject, but for each cluster does honor it, it is possible for this MultiClusterWorkload
-	// to be placed and created there.
 	AsUser Subject `json:"asUser"`
 }
 
@@ -377,10 +372,6 @@ type ItemStatus struct {
 	// +patchStrategy=merge
 	// +optional
 	Conditions []Condition `json:"conditions,omitempty"  patchStrategy:"merge" patchMergeKey:"type"`
-
-	// ItemStatuses track the deployment values by item
-	// +optional
-	ItemStatuses []ItemStatus `json:"itemStatuses"`
 }
 
 // Condition represents the state of the operator's

@@ -1,0 +1,326 @@
+
+---
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  creationTimestamp: null
+  name: clusterworkloads.clustermanager.onprem.openshift.io
+spec:
+  group: clustermanager.onprem.openshift.io
+  names:
+    kind: ClusterWorkload
+    listKind: ClusterWorkloadList
+    plural: clusterworkloads
+    singular: clusterworkload
+  scope: ""
+  subresources:
+    status: {}
+  validation:
+    openAPIV3Schema:
+      description: ClusterWorkload describes what is desired to be placed into each
+        spoke cluster by creating a resource of this type in a namespace reserved
+        for each spoke..
+      properties:
+        apiVersion:
+          description: 'APIVersion defines the versioned schema of this representation
+            of an object. Servers should convert recognized schemas to the latest
+            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+          type: string
+        kind:
+          description: 'Kind is a string value representing the REST resource this
+            object represents. Servers may infer this from the endpoint the client
+            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+          type: string
+        metadata:
+          type: object
+        spec:
+          properties:
+            asUser:
+              description: asUser indicates which users should be used in the spoke
+                cluster to create this workload.  Because the workload's ability to
+                be successfully created in the cluster is tightly coupled to the subject
+                being used to create that workload in the spoke cluster, this is a
+                property of the MultiClusterWorkloadSpec. This name must match a DefinedSubject.metadata.name
+                to pass an admission validation check, but the reference can become
+                stale at a later date.
+              properties:
+                groups:
+                  items:
+                    type: string
+                  type: array
+                user:
+                  type: string
+              required:
+              - groups
+              - user
+              type: object
+            workload:
+              description: workload describes the resources to be placed on the spoke.
+              properties:
+                manifests:
+                  description: manifests holds a metav1.List that contains items for
+                    the individual manifests that you want created in the spoke cluster.
+                  properties:
+                    apiVersion:
+                      description: 'APIVersion defines the versioned schema of this
+                        representation of an object. Servers should convert recognized
+                        schemas to the latest internal value, and may reject unrecognized
+                        values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+                      type: string
+                    items:
+                      description: List of objects
+                      items:
+                        type: object
+                      type: array
+                    kind:
+                      description: 'Kind is a string value representing the REST resource
+                        this object represents. Servers may infer this from the endpoint
+                        the client submits requests to. Cannot be updated. In CamelCase.
+                        More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+                      type: string
+                    metadata:
+                      description: 'Standard list metadata. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+                      properties:
+                        continue:
+                          description: continue may be set if the user set a limit
+                            on the number of items returned, and indicates that the
+                            server has more data available. The value is opaque and
+                            may be used to issue another request to the endpoint that
+                            served this list to retrieve the next set of available
+                            objects. Continuing a consistent list may not be possible
+                            if the server configuration has changed or more than a
+                            few minutes have passed. The resourceVersion field returned
+                            when using this continue value will be identical to the
+                            value in the first response, unless you have received
+                            this token from an error message.
+                          type: string
+                        remainingItemCount:
+                          description: remainingItemCount is the number of subsequent
+                            items in the list which are not included in this list
+                            response. If the list request contained label or field
+                            selectors, then the number of remaining items is unknown
+                            and the field will be left unset and omitted during serialization.
+                            If the list is complete (either because it is not chunking
+                            or because this is the last chunk), then there are no
+                            more remaining items and this field will be left unset
+                            and omitted during serialization. Servers older than v1.15
+                            do not set this field. The intended use of the remainingItemCount
+                            is *estimating* the size of a collection. Clients should
+                            not rely on the remainingItemCount to be set or to be
+                            exact.
+                          format: int64
+                          type: integer
+                        resourceVersion:
+                          description: 'String that identifies the server''s internal
+                            version of this object that can be used by clients to
+                            determine when objects have changed. Value must be treated
+                            as opaque by clients and passed unmodified back to the
+                            server. Populated by the system. Read-only. More info:
+                            https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency'
+                          type: string
+                        selfLink:
+                          description: "selfLink is a URL representing this object.
+                            Populated by the system. Read-only. \n DEPRECATED Kubernetes
+                            will stop propagating this field in 1.20 release and the
+                            field is planned to be removed in 1.21 release."
+                          type: string
+                      type: object
+                  required:
+                  - items
+                  type: object
+                type:
+                  description: 'type indicates the type of workload to put into a
+                    spoke cluster.  Valid values:  1. "Manifests" in the future, more
+                    types could be added by helm chart or some other higher level
+                    entity.'
+                  type: string
+              required:
+              - manifests
+              - type
+              type: object
+          required:
+          - asUser
+          - workload
+          type: object
+        status:
+          properties:
+            conditions:
+              description: conditions describes the state of the controller's reconciliation
+                functionality.  This is a union of the WorkloadStatus and overall
+                conditions like...  1. SubjectHonored
+              items:
+                description: Condition represents the state of the operator's reconciliation
+                  functionality.
+                properties:
+                  lastTransitionTime:
+                    description: lastTransitionTime is the time of the last update
+                      to the current status object.
+                    format: date-time
+                    type: string
+                  message:
+                    description: message provides additional information about the
+                      current condition. This is only to be consumed by humans.
+                    type: string
+                  reason:
+                    description: reason is the reason for the condition's last transition.  Reasons
+                      are CamelCase
+                    type: string
+                  status:
+                    description: status of the condition, one of True, False, Unknown.
+                    enum:
+                    - "True"
+                    - "False"
+                    - Unknown
+                    type: string
+                  type:
+                    description: type specifies the state of the operator's reconciliation
+                      functionality.
+                    type: string
+                required:
+                - lastTransitionTime
+                - status
+                - type
+                type: object
+              type: array
+            workloadStatus:
+              description: workloadStatus track the deployment values and errors for
+                particular kinds of workloads
+              properties:
+                manifestsStatus:
+                  description: manifestsStatus holds a metav1.List that contains items
+                    for the individual manifests that you want created in the spoke
+                    cluster.
+                  properties:
+                    conditions:
+                      description: conditions describes the state of the controller's
+                        reconciliation functionality.  This is a union of the ItemStatuses
+                      items:
+                        description: Condition represents the state of the operator's
+                          reconciliation functionality.
+                        properties:
+                          lastTransitionTime:
+                            description: lastTransitionTime is the time of the last
+                              update to the current status object.
+                            format: date-time
+                            type: string
+                          message:
+                            description: message provides additional information about
+                              the current condition. This is only to be consumed by
+                              humans.
+                            type: string
+                          reason:
+                            description: reason is the reason for the condition's
+                              last transition.  Reasons are CamelCase
+                            type: string
+                          status:
+                            description: status of the condition, one of True, False,
+                              Unknown.
+                            enum:
+                            - "True"
+                            - "False"
+                            - Unknown
+                            type: string
+                          type:
+                            description: type specifies the state of the operator's
+                              reconciliation functionality.
+                            type: string
+                        required:
+                        - lastTransitionTime
+                        - status
+                        - type
+                        type: object
+                      type: array
+                    itemStatuses:
+                      description: ItemStatuses track the deployment values by item
+                      items:
+                        properties:
+                          conditions:
+                            description: 'conditions describes the state of the controller''s
+                              reconciliation functionality. known conditions include:  1.
+                              Pending  2. Reconciled  3. Complete - for "known" resources
+                              like deployments where we wait for a condition like
+                              available pods, indicates that                the logically
+                              known-good state has been reached.  For all other resource,
+                              this simply means that                the apply call
+                              succeeded.  4. Errored - errored indicates that REST
+                              returned a non-2xx return code OR that complete has
+                              taken too long.'
+                            items:
+                              description: Condition represents the state of the operator's
+                                reconciliation functionality.
+                              properties:
+                                lastTransitionTime:
+                                  description: lastTransitionTime is the time of the
+                                    last update to the current status object.
+                                  format: date-time
+                                  type: string
+                                message:
+                                  description: message provides additional information
+                                    about the current condition. This is only to be
+                                    consumed by humans.
+                                  type: string
+                                reason:
+                                  description: reason is the reason for the condition's
+                                    last transition.  Reasons are CamelCase
+                                  type: string
+                                status:
+                                  description: status of the condition, one of True,
+                                    False, Unknown.
+                                  enum:
+                                  - "True"
+                                  - "False"
+                                  - Unknown
+                                  type: string
+                                type:
+                                  description: type specifies the state of the operator's
+                                    reconciliation functionality.
+                                  type: string
+                              required:
+                              - lastTransitionTime
+                              - status
+                              - type
+                              type: object
+                            type: array
+                          group:
+                            type: string
+                          kind:
+                            type: string
+                          name:
+                            type: string
+                          namespace:
+                            type: string
+                          version:
+                            type: string
+                        required:
+                        - group
+                        - kind
+                        - name
+                        - version
+                        type: object
+                      type: array
+                  type: object
+                type:
+                  description: 'type indicates the type of workload to put into a
+                    spoke cluster.  These should match the types of workloads. Valid
+                    values:  1. "Manifests"'
+                  type: string
+              required:
+              - manifestsStatus
+              - type
+              type: object
+          type: object
+      required:
+      - spec
+      - status
+      type: object
+  version: v1alpha1
+  versions:
+  - name: v1alpha1
+    served: true
+    storage: true
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []
