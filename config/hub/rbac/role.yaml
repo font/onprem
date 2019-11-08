@@ -30,7 +30,7 @@ rules:
 - apiGroups:
   - clustermanager.onprem.openshift.io
   resources:
-  - joinedclusters
+  - registeredclusters
   verbs:
   - create
   - delete
@@ -42,7 +42,7 @@ rules:
 - apiGroups:
   - clustermanager.onprem.openshift.io
   resources:
-  - joinedclusters/status
+  - registeredclusters/status
   verbs:
   - get
   - patch

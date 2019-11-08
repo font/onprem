@@ -17,16 +17,17 @@ package main
 
 import (
 	"flag"
+	"os"
+	"time"
+
 	clustermanagerv1alpha1 "github.com/font/onprem/api/v1alpha1"
 	"github.com/font/onprem/pkg/controllers/hub"
 	configv1 "github.com/openshift/api/config/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
-	"os"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
-	"time"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -72,12 +73,12 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err = (&hub.JoinedClusterReconciler{
+	if err = (&hub.RegisteredClusterReconciler{
 		Client: mgr.GetClient(),
-		Log:    ctrl.Log.WithName("hub").WithName("JoinedCluster"),
+		Log:    ctrl.Log.WithName("hub").WithName("RegisteredCluster"),
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "JoinedCluster")
+		setupLog.Error(err, "unable to create controller", "controller", "RegisteredCluster")
 		os.Exit(1)
 	}
 	// +kubebuilder:scaffold:builder
