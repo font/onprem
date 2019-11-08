@@ -4,36 +4,152 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
+// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
+
+// RegisteredClusterSpec defines the desired state of RegisteredCluster
+type RegisteredClusterSpec struct {
+	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
+	// Important: Run "make" to regenerate code after modifying this file
+
+	// +kubebuilder:validation:MaxLength=253
+	// +kubebuilder:validation:Pattern=^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9]))*$
+
+	// Optional service account name to allow spoke cluster to communicate with the hub when joining
+	// If the service account by this name doesn't exist, it will be created in the hub cluster
+	// If not specified, a service account will be generated for the spoke cluster to use.
+	// +optional
+	ServiceAccount *string `json:"serviceAccount,omitempty"`
+
+	// Optional stale duration used to configure the time to wait before
+	// determining that the spoke cluster connection has gone stale by not
+	// heartbeating back to the hub.
+	// +optional
+	StaleDuration *metav1.Duration `json:"staleDuration,omitempty"`
+
+	// Optional disconnect duration used to configure the time to wait before
+	// determining that the spoke cluster has disconnected by not heartbeating
+	// back to the hub after the connection became stale.
+	// +optional
+	DisconnectDuration *metav1.Duration `json:"disconnectDuration,omitempty"`
+
+	// Optional identifies the name of the spoke cluster that is being registered
+	// +optional
+	ClusterName *string `json:"clusterName,omitempty"`
+
+	// Optional identifies the interval at which the spoke will echo back heartbeat
+	// to the hub
+	// +optional
+	HeartBeatDuration *metav1.Duration `json:"heartBeatDuration,omitempty"`
+}
+
+// ConditionStatus describes the status of the condition as described by the constants below
+// +kubebuilder:validation:Enum=True;False;Unknown
+type ConditionStatus string
+
+// These are valid condition statuses. "ConditionTrue" means a resource is in the condition.
+// "ConditionFalse" means a resource is not in the condition. "ConditionUnknown" means kubernetes
+// can't decide if a resource is in the condition or not. In the future, we could add other
+// intermediate conditions, e.g. ConditionDegraded.
+const (
+	ConditionTrue    ConditionStatus = "True"
+	ConditionFalse   ConditionStatus = "False"
+	ConditionUnknown ConditionStatus = "Unknown"
+)
+
+// RegisteredClusterConditionType describes the possible type of conditions that can occur for this resource
+// +kubebuilder:validation:Enum=ReadyToJoin;AgentConnected;AgentStale;AgentDisconnected
+type RegisteredClusterConditionType string
+
+const (
+	ConditionTypeReadyToJoin       RegisteredClusterConditionType = "ReadyToJoin"
+	ConditionTypeAgentConnected    RegisteredClusterConditionType = "AgentConnected"
+	ConditionTypeAgentStale        RegisteredClusterConditionType = "AgentStale"
+	ConditionTypeAgentDisconnected RegisteredClusterConditionType = "AgentDisconnected"
+)
+
+type RegisteredClusterCondition struct {
+	// Type defines the type of RegisteredClusterCondition being populated by the controller
+	Type RegisteredClusterConditionType `json:"type"`
+	// Status is the status of the condition.
+	// Can be True, False, Unknown.
+	Status ConditionStatus `json:"status"`
+	// Last transition time when this condition got set
+	// +optional
+	LastTransitionTime *metav1.Time `json:"lastTransitionTime,omitempty"`
+	// Unique, one-word, CamelCase reason for the condition's last transition.
+	// +optional
+	Reason *string `json:"reason,omitempty"`
+	// Human readable message indicating details about last transition
+	// +optional
+	Message *string `json:"message,omitempty"`
+}
+
+// ClusterAgentInfo describes the metadata reported by the cluster agent in the
+// spoke cluster.
+type ClusterAgentInfo struct {
+	// Version of the cluster agent running in the spoke cluster.
+	Version string `json:"version"`
+	// Image of the cluster agent running int he spoke cluster.
+	Image string `json:"image"`
+	// Last update time written by cluster agent.
+	LastUpdateTime metav1.Time `json:"lastUpdateTime"`
+}
+
+// RegisteredClusterStatus defines the observed state of RegisteredCluster
+type RegisteredClusterStatus struct {
+	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
+	// Important: Run "make" to regenerate code after modifying this file
+
+	//RegisteredClusterConditions
+	Conditions []RegisteredClusterCondition `json:"conditions"`
+
+	// JoinCommand
+	// +optional
+	JoinCommand *string `json:"joinCommand,omitempty"`
+
+	// +kubebuilder:validation:253
+	// +kubebuilder:validation:^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9]))*$
+
+	// ServiceAccount name chosen by the hub for the spoke to use
+	// +optional
+	ServiceAccountName *string `json:"serviceAccountName,omitempty"`
+
+	// When the cluster agent starts running and heartbeating, it will report
+	// metadata information in this field.
+	// +optional
+	ClusterAgentInfo *ClusterAgentInfo `json:"clusterAgentInfo,omitempty"`
+}
+
+// +kubebuilder:object:root=true
+// +kubebuilder:subresource:status
 // +genclient
 // +genclient:nonNamespaced
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-
 // RegisteredCluster represents a cluster known to this hub. The name does NOT match the cluster itself.  Instead we
 // recommend using a generated name to avoid conflicts. The name will get a `cluster-` prefix to map to its namespace.
 type RegisteredCluster struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   RegisteredClusterSpec   `json:"spec"`
-	Status RegisteredClusterStatus `json:"status"`
+	Spec   RegisteredClusterSpec   `json:"spec,omitempty"`
+	Status RegisteredClusterStatus `json:"status,omitempty"`
 }
 
-type RegisteredClusterSpec struct {
-	ClusterName string `json:"clusterName"`
-}
+// +kubebuilder:object:root=true
 
-type RegisteredClusterStatus struct {
-	// conditions describes the state of the controller's reconciliation functionality.
-	// +patchMergeKey=type
-	// +patchStrategy=merge
-	// +optional
-	Conditions []Condition `json:"conditions,omitempty"  patchStrategy:"merge" patchMergeKey:"type"`
+// RegisteredClusterList contains a list of RegisteredCluster
+type RegisteredClusterList struct {
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata,omitempty"`
+	Items           []RegisteredCluster `json:"items"`
 }
 
 // +genclient
 // +genclient:nonNamespaced
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-
+// +kubebuilder:object:root=true
+// +kubebuilder:subresource:status
 // PlacementPolicy matches a set of MultiClusterWorkloads with a set of RegisteredClusters.  Keep in mind that it is possible
 // for a single MultiClusterWorkload,RegisteredClusters tuple to be produced by different PlacementPolicies.
 // Access control inside the hub is uniform, so if a user has the power to create a PlacementPolicy, he can put ANY
@@ -97,7 +213,8 @@ type PlacementPolicyStatus struct {
 // +genclient
 // +genclient:nonNamespaced
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-
+// +kubebuilder:object:root=true
+// +kubebuilder:subresource:status
 // MultiClusterWorkload describes what could be placed into a spoke cluster.  It does not describe which (if any) clusters should
 // create the workload.  That is done based on a PlacementPolicy.  If a PlacementPolicy matches a MultiClusterWorkload
 // and a RegisteredCluster, then a namespaced Workload resource will be created in the cluster's namespace.
@@ -175,7 +292,8 @@ type ClusterStatus struct {
 
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-
+// +kubebuilder:object:root=true
+// +kubebuilder:subresource:status
 // ClusterWorkload describes what could be placed into a spoke cluster.  It does not describe which (if any) clusters should
 // create the workload.  That is done based on a PlacementPolicy.  If a PlacementPolicy matches a MultiClusterWorkload
 // and a RegisteredCluster, then a namespaced Workload resource will be created in the cluster's namespace.
@@ -265,19 +383,7 @@ type ItemStatus struct {
 	ItemStatuses []ItemStatus `json:"itemStatuses"`
 }
 
-type ConditionStatus string
-
-// These are valid condition statuses. "ConditionTrue" means a resource is in the condition.
-// "ConditionFalse" means a resource is not in the condition. "ConditionUnknown" means kubernetes
-// can't decide if a resource is in the condition or not. In the future, we could add other
-// intermediate conditions, e.g. ConditionDegraded.
-const (
-	ConditionTrue    ConditionStatus = "True"
-	ConditionFalse   ConditionStatus = "False"
-	ConditionUnknown ConditionStatus = "Unknown"
-)
-
-// ClusterOperatorStatusCondition represents the state of the operator's
+// Condition represents the state of the operator's
 // reconciliation functionality.
 // +k8s:deepcopy-gen=true
 type Condition struct {
@@ -296,4 +402,9 @@ type Condition struct {
 	// message provides additional information about the current condition.
 	// This is only to be consumed by humans.
 	Message string `json:"message,omitempty"`
+}
+
+func init() {
+	SchemeBuilder.Register(&RegisteredCluster{}, &RegisteredClusterList{})
+	//TODO: AB - add additional scheme builder stuff here for other API types
 }
