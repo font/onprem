@@ -1,0 +1,250 @@
+
+---
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  creationTimestamp: null
+  name: placementpolicies.clustermanager.onprem.openshift.io
+spec:
+  group: clustermanager.onprem.openshift.io
+  names:
+    kind: PlacementPolicy
+    listKind: PlacementPolicyList
+    plural: placementpolicies
+    singular: placementpolicy
+  scope: ""
+  subresources:
+    status: {}
+  validation:
+    openAPIV3Schema:
+      description: PlacementPolicy matches a set of MultiClusterWorkloads with a set
+        of RegisteredClusters.  Keep in mind that it is possible for a single MultiClusterWorkload,RegisteredClusters
+        tuple to be produced by different PlacementPolicies. Access control inside
+        the hub is uniform, so if a user has the power to create a PlacementPolicy,
+        he can put ANY MultiClusterWorkload on any RegisteredCluster.  However, he
+        cannot control the CONTENT of that MultiClusterWorkload unless he has the
+        power to "use" the "asUser" in that MultiClusterWorkload.
+      properties:
+        apiVersion:
+          description: 'APIVersion defines the versioned schema of this representation
+            of an object. Servers should convert recognized schemas to the latest
+            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+          type: string
+        kind:
+          description: 'Kind is a string value representing the REST resource this
+            object represents. Servers may infer this from the endpoint the client
+            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+          type: string
+        metadata:
+          type: object
+        spec:
+          properties:
+            multiClusterWorkloadSelector:
+              description: multiClusterWorkloadSelector describes how to select MultiClusterWorkloads.  Every
+                match for every selector in the list is added to the list of workloads.
+                This makes the slice a logical OR
+              items:
+                properties:
+                  labelSelector:
+                    description: labelSelector specifies a label selector to evaluate
+                      against all MultiClusterWorkloads.  It is mutually exclusive
+                      with names.
+                    properties:
+                      matchExpressions:
+                        description: matchExpressions is a list of label selector
+                          requirements. The requirements are ANDed.
+                        items:
+                          description: A label selector requirement is a selector
+                            that contains values, a key, and an operator that relates
+                            the key and values.
+                          properties:
+                            key:
+                              description: key is the label key that the selector
+                                applies to.
+                              type: string
+                            operator:
+                              description: operator represents a key's relationship
+                                to a set of values. Valid operators are In, NotIn,
+                                Exists and DoesNotExist.
+                              type: string
+                            values:
+                              description: values is an array of string values. If
+                                the operator is In or NotIn, the values array must
+                                be non-empty. If the operator is Exists or DoesNotExist,
+                                the values array must be empty. This array is replaced
+                                during a strategic merge patch.
+                              items:
+                                type: string
+                              type: array
+                          required:
+                          - key
+                          - operator
+                          type: object
+                        type: array
+                      matchLabels:
+                        additionalProperties:
+                          type: string
+                        description: matchLabels is a map of {key,value} pairs. A
+                          single {key,value} in the matchLabels map is equivalent
+                          to an element of matchExpressions, whose key field is "key",
+                          the operator is "In", and the values array contains only
+                          "value". The requirements are ANDed.
+                        type: object
+                    type: object
+                  names:
+                    description: names specifies specific names to match MultiClusterWorkload.  It
+                      is mutually exclusive with labelSelector.
+                    items:
+                      type: string
+                    type: array
+                  type:
+                    description: 'type indicates the type of workload to put into
+                      a spoke cluster.  Valid values:  1. "LabelSelector"  1. "Names"'
+                    type: string
+                required:
+                - labelSelector
+                - names
+                - type
+                type: object
+              type: array
+            registeredClusterSelector:
+              description: registeredClusterSelector describes how to select RegisteredClusters.  Every
+                match for every selector in the list is added to the list of clusters.
+                This makes the slice a logical OR
+              items:
+                properties:
+                  labelSelector:
+                    description: labelSelector specifies a label selector to evaluate
+                      against all RegisteredClusterSelectors.  It is mutually exclusive
+                      with names.
+                    properties:
+                      matchExpressions:
+                        description: matchExpressions is a list of label selector
+                          requirements. The requirements are ANDed.
+                        items:
+                          description: A label selector requirement is a selector
+                            that contains values, a key, and an operator that relates
+                            the key and values.
+                          properties:
+                            key:
+                              description: key is the label key that the selector
+                                applies to.
+                              type: string
+                            operator:
+                              description: operator represents a key's relationship
+                                to a set of values. Valid operators are In, NotIn,
+                                Exists and DoesNotExist.
+                              type: string
+                            values:
+                              description: values is an array of string values. If
+                                the operator is In or NotIn, the values array must
+                                be non-empty. If the operator is Exists or DoesNotExist,
+                                the values array must be empty. This array is replaced
+                                during a strategic merge patch.
+                              items:
+                                type: string
+                              type: array
+                          required:
+                          - key
+                          - operator
+                          type: object
+                        type: array
+                      matchLabels:
+                        additionalProperties:
+                          type: string
+                        description: matchLabels is a map of {key,value} pairs. A
+                          single {key,value} in the matchLabels map is equivalent
+                          to an element of matchExpressions, whose key field is "key",
+                          the operator is "In", and the values array contains only
+                          "value". The requirements are ANDed.
+                        type: object
+                    type: object
+                  names:
+                    description: names specifies specific names to match RegisteredClusterSelector.  It
+                      is mutually exclusive with labelSelector.
+                    items:
+                      type: string
+                    type: array
+                  type:
+                    description: 'type indicates the type of workload to put into
+                      a spoke cluster.  Valid values:  1. "LabelSelector"  1. "Names"'
+                    type: string
+                required:
+                - labelSelector
+                - names
+                - type
+                type: object
+              type: array
+          required:
+          - multiClusterWorkloadSelector
+          - registeredClusterSelector
+          type: object
+        status:
+          properties:
+            conditions:
+              description: conditions describes the state of the controller's reconciliation
+                functionality.  This only reflects the ability to resolve the MultiClusterWorkloads
+                and RegisteredClusters.
+              items:
+                description: Condition represents the state of the operator's reconciliation
+                  functionality.
+                properties:
+                  lastTransitionTime:
+                    description: lastTransitionTime is the time of the last update
+                      to the current status object.
+                    format: date-time
+                    type: string
+                  message:
+                    description: message provides additional information about the
+                      current condition. This is only to be consumed by humans.
+                    type: string
+                  reason:
+                    description: reason is the reason for the condition's last transition.  Reasons
+                      are CamelCase
+                    type: string
+                  status:
+                    description: status of the condition, one of True, False, Unknown.
+                    enum:
+                    - "True"
+                    - "False"
+                    - Unknown
+                    type: string
+                  type:
+                    description: type specifies the state of the operator's reconciliation
+                      functionality.
+                    type: string
+                required:
+                - lastTransitionTime
+                - status
+                - type
+                type: object
+              type: array
+            multiClusterWorkloads:
+              description: multiClusterWorkloads is the list of matching MultiClusterWorkloads
+              items:
+                type: string
+              type: array
+            registeredClusters:
+              description: registeredClusters is the list of matching RegisteredClusters
+              items:
+                type: string
+              type: array
+          required:
+          - multiClusterWorkloads
+          - registeredClusters
+          type: object
+      required:
+      - spec
+      - status
+      type: object
+  version: v1alpha1
+  versions:
+  - name: v1alpha1
+    served: true
+    storage: true
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []

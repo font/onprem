@@ -1,0 +1,165 @@
+
+---
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.2.2
+  creationTimestamp: null
+  name: registeredclusters.clustermanager.onprem.openshift.io
+spec:
+  group: clustermanager.onprem.openshift.io
+  names:
+    kind: RegisteredCluster
+    listKind: RegisteredClusterList
+    plural: registeredclusters
+    singular: registeredcluster
+  scope: ""
+  subresources:
+    status: {}
+  validation:
+    openAPIV3Schema:
+      description: RegisteredCluster represents a cluster known to this hub. The name
+        does NOT match the cluster itself.  Instead we recommend using a generated
+        name to avoid conflicts. The name will get a `cluster-` prefix to map to its
+        namespace.
+      properties:
+        apiVersion:
+          description: 'APIVersion defines the versioned schema of this representation
+            of an object. Servers should convert recognized schemas to the latest
+            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+          type: string
+        kind:
+          description: 'Kind is a string value representing the REST resource this
+            object represents. Servers may infer this from the endpoint the client
+            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+          type: string
+        metadata:
+          type: object
+        spec:
+          description: RegisteredClusterSpec defines the desired state of RegisteredCluster
+          properties:
+            clusterName:
+              description: Optional identifies the name of the spoke cluster that
+                is being registered
+              type: string
+            disconnectDuration:
+              description: Optional disconnect duration used to configure the time
+                to wait before determining that the spoke cluster has disconnected
+                by not heartbeating back to the hub after the connection became stale.
+              type: string
+            heartBeatDuration:
+              description: Optional identifies the interval at which the spoke will
+                echo back heartbeat to the hub
+              type: string
+            serviceAccount:
+              description: Optional service account name to allow spoke cluster to
+                communicate with the hub when joining If the service account by this
+                name doesn't exist, it will be created in the hub cluster If not specified,
+                a service account will be generated for the spoke cluster to use.
+              maxLength: 253
+              pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9]))*$
+              type: string
+            staleDuration:
+              description: Optional stale duration used to configure the time to wait
+                before determining that the spoke cluster connection has gone stale
+                by not heartbeating back to the hub.
+              type: string
+          type: object
+        status:
+          description: RegisteredClusterStatus defines the observed state of RegisteredCluster
+          properties:
+            clusterAgentInfo:
+              description: When the cluster agent starts running and heartbeating,
+                it will report metadata information in this field.
+              properties:
+                clusterName:
+                  description: ClusterName provides the cluster name of the spoke
+                    cluster
+                  type: string
+                clusterVersion:
+                  description: ClusterVersion provides the version of openshift distribution
+                    running in the spoke cluster.
+                  type: string
+                image:
+                  description: Image of the cluster agent running in the spoke cluster.
+                  type: string
+                lastUpdateTime:
+                  description: Last update time written by cluster agent.
+                  format: date-time
+                  type: string
+                nodeCount:
+                  description: NodeCount provides the number of nodes present in the
+                    spoke cluster.
+                  type: integer
+                version:
+                  description: Version of the cluster agent running in the spoke cluster.
+                  type: string
+              required:
+              - clusterName
+              - clusterVersion
+              - image
+              - lastUpdateTime
+              - nodeCount
+              - version
+              type: object
+            conditions:
+              description: RegisteredClusterConditions
+              items:
+                properties:
+                  lastTransitionTime:
+                    description: Last transition time when this condition got set
+                    format: date-time
+                    type: string
+                  message:
+                    description: Human readable message indicating details about last
+                      transition
+                    type: string
+                  reason:
+                    description: Unique, one-word, CamelCase reason for the condition's
+                      last transition.
+                    type: string
+                  status:
+                    description: Status is the status of the condition. Can be True,
+                      False, Unknown.
+                    enum:
+                    - "True"
+                    - "False"
+                    - Unknown
+                    type: string
+                  type:
+                    description: Type defines the type of RegisteredClusterCondition
+                      being populated by the controller
+                    enum:
+                    - ReadyToJoin
+                    - AgentConnected
+                    - AgentStale
+                    - AgentDisconnected
+                    type: string
+                required:
+                - status
+                - type
+                type: object
+              type: array
+            joinCommand:
+              description: JoinCommand
+              type: string
+            serviceAccountName:
+              description: ServiceAccount name chosen by the hub for the spoke to
+                use
+              type: string
+          required:
+          - conditions
+          type: object
+      type: object
+  version: v1alpha1
+  versions:
+  - name: v1alpha1
+    served: true
+    storage: true
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []
