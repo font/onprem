@@ -1,7 +1,7 @@
 apiVersion: clustermanager.onprem.openshift.io/v1alpha1
-kind: JoinedCluster
+kind: RegisteredCluster
 metadata:
-  name: joinedcluster-baz
+  name: registeredcluster-baz
   namespace: test
 spec:
   # Add fields here
