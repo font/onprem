@@ -70,3 +70,42 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: controller-agent
+---
+# bootstrap sa, cluster role and binding
+piVersion: v1
+kind: ServiceAccount
+metadata:
+  name: onprem-bootstrap-sa
+  namespace: onprem-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: onprem-bootstrap-role
+rules:
+- apiGroups:
+  - rbac.authorization.k8s.io
+  resources:
+  - clusterroles
+  - clusterrolebindings
+  - roles
+  - rolebindings
+  verbs:
+  - get
+  - create
+  - update
+  - patch
+  - delete
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: onprem-bootstrap-clusterrolebinding
+  namespace: onprem-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: onprem-bootstrap-role
+subjects:
+- kind: ServiceAccount
+  name: onprem-bootstrap-sa
