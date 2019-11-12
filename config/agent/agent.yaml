@@ -22,6 +22,7 @@ spec:
       labels:
         control-plane: controller-agent
     spec:
+      serviceAccountName: controller-agent
       containers:
       - command:
         - /agent
@@ -50,10 +51,17 @@ spec:
         configMap:
           name: hub-cluster
 ---
+# controller agent sa and rolebinding
+piVersion: v1
+kind: ServiceAccount
+metadata:
+  name: controller-agent
+  namespace: onprem-system
+---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: agent-admin
+  name: controller-agent-admin
   namespace: onprem-system
 roleRef:
   apiGroup: rbac.authorization.k8s.io
@@ -61,4 +69,4 @@ roleRef:
   name: admin
 subjects:
 - kind: ServiceAccount
-  name: default
+  name: controller-agent
